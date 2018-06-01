@@ -1,4 +1,6 @@
 import tensorflow as tf
+
+
 # discriminator- with 2 layer NN to classify(binary) fake images and real images
 # input - real/fake images x [-, 784]
 # ouput - scores [-, 1]
@@ -8,15 +10,16 @@ import tensorflow as tf
 # set reuse attribute to evaluate real and fake images with same variables
 def discriminate(x, _reuse=False):
     n_hidden = 256
-    n_input = 1024#28 * 28
-    n_noise = 1024#128
+    # n_input = #256*256*3#28 * 28
+    n_noise = 128
 
     _mean = 0.0
     _stddev = 0.01
 
+    # layer3
     with tf.variable_scope(name_or_scope='dis', reuse=_reuse) as scope:
         dw1 = tf.get_variable(name='w1',
-                              shape=[n_input, n_hidden],
+                              shape=[64* 64* 3, n_hidden],
                               initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
         db1 = tf.get_variable(name='b1',
                               shape=[n_hidden],

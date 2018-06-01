@@ -9,8 +9,8 @@ import tensorflow as tf
 # mean, stddev class variable로 빼내게
 def generate(z, _reuse=False):
     n_hidden = 256
-    n_input = 1024#28 * 28
-    n_noise = 1024#128
+    # n_input = 1024#28 * 28
+    n_noise = 128#1024  # 128
 
     _mean = 0.0
     _stddev = 0.01
@@ -24,10 +24,10 @@ def generate(z, _reuse=False):
                               shape=[n_hidden],
                               initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
         gw2 = tf.get_variable(name="w2",
-                              shape=[n_hidden, n_input],
+                              shape=[n_hidden, 64 * 64* 3],
                               initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
         gb2 = tf.get_variable(name="b2",
-                              shape=[n_input],
+                              shape=[64 * 64* 3],
                               initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
 
     hidden = tf.nn.relu(tf.matmul(z, gw1) + gb1)

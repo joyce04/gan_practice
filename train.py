@@ -20,7 +20,26 @@ parser.add_argument('--DATASET', required=False, type=str, default='bedroom')
 # input - batch_size to create random noise equal to the number of batch_size
 # ouput - noise [batch_size, 128]
 def random_noise(batch_size):
-    return np.random.normal(size=[batch_size, n_noise])
+    return np.random.normal(size=[batch_size, 128])
+
+
+def input_pipeline(filenames):
+    filename_queue = tf.train.string_input_producer(filenames
+                                                    , num_epochs=total_epochs
+                                                    , shuffle=True)
+
+    real_images = data.read_input_queue(filename_queue)
+    label = True  # np.ones(real_images.shape[0])
+    print(real_images.shape)
+    # min_after_dequeue defines how big a buffer we will randomly sample from
+    min_after_dequeue = 10000
+    # capacity recommended by tensorflow
+    capacity = min_after_dequeue + 3 * BATCH_SIZE
+    image_batch, label_batch = tf.train.shuffle_batch([real_images, label]
+                                                      , batch_size=BATCH_SIZE
+                                                      , capacity=capacity
+                                                      , min_after_dequeue=min_after_dequeue)
+    return image_batch, label_batch
 
 
 if __name__ == '__main__':
@@ -62,36 +81,32 @@ if __name__ == '__main__':
     g_learning_rate = 2e-4  # 1e-3
 
     n_hidden = 256
-    n_input = 112 * 112
-    n_noise = 1024
+    # n_input = 112 * 112
+    n_noise = 128
 
     _mean = 0.0
     _stddev = 0.01
 
     path = os.getcwd() + '/lsun/church_outdoor_train_lmdb'
-    data.load_data_convert(path)
-    # training_list = data.load_data(path)
-    # filename_queue = tf.train.string_input_producer(training_list)
-    filename_queue = tf.train.string_input_producer([])
-    # data.read_lmdb(filename_queue, BATCH_SIZE)
-    real_images = data.read_input_queue(filename_queue, BATCH_SIZE, tf.Session())
+    files = data.convert_data(path)
 
-    train_x = real_images
-    train_y = np.ones(train_x.shape[0].value)
-    print(train_x.shape, train_y.shape)
-
+    train_x, train_y = input_pipeline(files)
+    noise = random_noise(BATCH_SIZE)
+    # iterator = tf.data.Iterator.from_structure(train_x.dtype, train_x.shape)
+    # next_element = iterator.get_next()
     # loss function in GAN represents performance of generator and discriminator
     # both generator and discriminator try to maximize its loss function
 
     g = tf.Graph()
     with g.as_default():
         # 1. feed input to graph
+        # None because values are wrapped continuously
         # X = tf.placeholder(tf.float32, [None, n_input])
-        X = tf.placeholder(tf.float32, [None, 1024])
+        X = tf.placeholder(tf.float32, [None, 64* 64* 3])
         # because GAN is unsupervised learning, it does not require y labels
 
         # noise
-        Z = tf.placeholder(tf.float32, [None, 1024])
+        Z = tf.placeholder(tf.float32, [None, 128])
         # Z = tf.placeholder(tf.float32, [None, n_noise])
 
         # 2. generator & discriminator
@@ -114,12 +129,9 @@ if __name__ == '__main__':
         gen_vars = [var for var in train_vars if 'gen' in var.name]
         dis_vars = [var for var in train_vars if 'dis' in var.name]
 
-        d_optimizer = tf.train.AdamOptimizer(learning_rate=d_learning_rate)
-        g_optimizer = tf.train.AdamOptimizer(learning_rate=g_learning_rate)
-
         # tensorflow's optimizer only offers minimization function
-        gen_train = g_optimizer.minimize(-gen_loss, var_list=gen_vars)
-        dis_train = d_optimizer.minimize(-dis_loss, var_list=dis_vars)
+        dis_train = tf.train.AdamOptimizer(learning_rate=d_learning_rate).minimize(-gen_loss, var_list=gen_vars)
+        gen_train = tf.train.AdamOptimizer(learning_rate=g_learning_rate).minimize(-dis_loss, var_list=dis_vars)
 
     # iterate training and update variables
 
@@ -127,18 +139,22 @@ if __name__ == '__main__':
         session.run(tf.global_variables_initializer())
         coordinator = tf.train.Coordinator()
 
-        # threads = tf.train.start_queue_runners(coordinator)
-        total_batchs = int(train_x.shape[0].value / BATCH_SIZE)
+        threads = tf.train.start_queue_runners(session, coordinator)
+        # total_batchs = int(train_x.shape[0].value / BATCH_SIZE)
 
         for epoch in range(total_epochs):
-            for batch in range(total_batchs):
-                batch_x = train_x[batch * BATCH_SIZE: (batch + 1) * BATCH_SIZE]
-                batch_y = train_y[batch * BATCH_SIZE: (batch + 1) * BATCH_SIZE]
-
-                noise = random_noise(BATCH_SIZE)
-
-                _, g_loss = session.run([gen_train, gen_loss], feed_dict={Z: noise})
-                _, d_loss = session.run([dis_train, dis_loss], feed_dict={X: batch_x, Z: noise})
+            # image_value, label_value, image_file_value = session.run([real_images, True, filename_queue])
+            # print(session.run(train_x, train_y))
+            # plt.imshow(image_value)
+            # plt.show()
+            # print(image_value)
+            # for batch in range(total_batchs):
+            #     batch_x = train_x[batch * BATCH_SIZE: (batch + 1) * BATCH_SIZE]
+            #     batch_y = train_y[batch * BATCH_SIZE: (batch + 1) * BATCH_SIZE]
+            #
+            #
+            # _, d_loss = session.run([dis_train, dis_loss], feed_dict={X: train_x[1], Z: noise})
+            # _, g_loss = session.run([gen_train, gen_loss], feed_dict={Z: noise})
 
             #             g_loss, d_loss = session.run([gen_loss, dis_loss], feed_dict={X:batch_x, Z:noise})
 
