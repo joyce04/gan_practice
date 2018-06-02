@@ -79,11 +79,12 @@ def read_input_queue(file_que):
     # add dimension 1 at the index 0
     decoded_image_4d = tf.expand_dims(decoded_image, 0)
     resized_image = tf.image.resize_bilinear(decoded_image_4d, [64, 64])
+
     # delete dim size 1 from tensor
     in_image = tf.squeeze(resized_image)
-    in_image = tf.reshape(in_image, [1, -1])
-    # in_image = in_image.reshape(1, -1)
+    in_image = tf.reshape(in_image, [-1])
 
+    # in_image = tf.reshape(decoded_image, [64*64*3])
     return in_image
 
     # def next_batch(self):

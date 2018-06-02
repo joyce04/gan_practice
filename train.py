@@ -90,8 +90,6 @@ if __name__ == '__main__':
     path = os.getcwd() + '/lsun/church_outdoor_train_lmdb'
     files = data.convert_data(path)
 
-    train_x, train_y = input_pipeline(files)
-    noise = random_noise(BATCH_SIZE)
     # iterator = tf.data.Iterator.from_structure(train_x.dtype, train_x.shape)
     # next_element = iterator.get_next()
     # loss function in GAN represents performance of generator and discriminator
@@ -99,10 +97,14 @@ if __name__ == '__main__':
 
     g = tf.Graph()
     with g.as_default():
+        train_x, train_y = input_pipeline(files)
+
+        noise = random_noise(BATCH_SIZE)
+
         # 1. feed input to graph
         # None because values are wrapped continuously
         # X = tf.placeholder(tf.float32, [None, n_input])
-        X = tf.placeholder(tf.float32, [None, 64* 64* 3])
+        X = tf.placeholder(tf.float32, [None, 64 * 64 * 3])
         # because GAN is unsupervised learning, it does not require y labels
 
         # noise
@@ -137,26 +139,22 @@ if __name__ == '__main__':
 
     with tf.Session(graph=g) as session:
         session.run(tf.global_variables_initializer())
+        session.run(tf.local_variables_initializer())
         coordinator = tf.train.Coordinator()
 
         threads = tf.train.start_queue_runners(session, coordinator)
-        # total_batchs = int(train_x.shape[0].value / BATCH_SIZE)
+        print('Start training')
 
         for epoch in range(total_epochs):
-            # image_value, label_value, image_file_value = session.run([real_images, True, filename_queue])
-            # print(session.run(train_x, train_y))
-            # plt.imshow(image_value)
-            # plt.show()
-            # print(image_value)
-            # for batch in range(total_batchs):
-            #     batch_x = train_x[batch * BATCH_SIZE: (batch + 1) * BATCH_SIZE]
-            #     batch_y = train_y[batch * BATCH_SIZE: (batch + 1) * BATCH_SIZE]
-            #
-            #
-            # _, d_loss = session.run([dis_train, dis_loss], feed_dict={X: train_x[1], Z: noise})
-            # _, g_loss = session.run([gen_train, gen_loss], feed_dict={Z: noise})
+            # print(train_x.eval())
+            # print(noise)
+            # session.run(gen_train, feed_dict={Z: noise})
+            # session.run(dis_train, feed_dict={X: train_x.eval(), Z: noise})
 
-            #             g_loss, d_loss = session.run([gen_loss, dis_loss], feed_dict={X:batch_x, Z:noise})
+            # _, g_loss = session.run([gen_train, gen_loss], feed_dict={Z: noise})
+            # _, d_loss = session.run([dis_train, dis_loss], feed_dict={X: train_x.eval(), Z: noise})
+
+            g_loss, d_loss = session.run([gen_loss, dis_loss], feed_dict={X: train_x.eval(), Z: noise})
 
             # check performance every 10 epoch
             if (epoch + 1) % 10 == 0:
@@ -166,6 +164,14 @@ if __name__ == '__main__':
 
             # check 10 fake images generator creates every 10 epoch
             if epoch == 0 or (epoch + 1) % 10 == 0:
+                fig, ax = plt.subplots(1, 10, figsize=(10, 1))
+                for i in range(10):
+                    ax[i].set_axis_off()
+                    real_images_ = tf.expand_dims(train_x.eval()[i], 0)
+                    ax[i].imshow(tf.reshape(real_images_, [64, 64, 3]).eval())
+                plt.savefig('check_points/input_{}.png'.format(str(epoch + 1).zfill(3)), bbox_inches='tight')
+                plt.close(fig)
+
                 sample_noise = random_noise(10)
 
                 generated = session.run(fake_x, feed_dict={Z: sample_noise})
@@ -173,8 +179,10 @@ if __name__ == '__main__':
                 fig, ax = plt.subplots(1, 10, figsize=(10, 1))
                 for i in range(10):
                     ax[i].set_axis_off()
-                    ax[i].imshow(np.reshape(generated[i], (28, 28)))
-                plt.savefig('gan-generated/{}.png'.format(str(epoch + 1).zfill(3)), bbox_inches='tight')
+                    ax[i].imshow(tf.reshape(generated[i], (64, 64, 3)).eval())
+                plt.savefig('check_points/{}.png'.format(str(epoch + 1).zfill(3)), bbox_inches='tight')
                 plt.close(fig)
 
+        coordinator.request_stop()
+        coordinator.join(threads)
         print('optimization finished')
