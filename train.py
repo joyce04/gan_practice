@@ -5,6 +5,7 @@ import tensorflow as tf
 import numpy as np
 import generator, discriminator
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
 # parsers fro command line
 # argv = [{'BATCH_SIZE':100}, {'DATA_DIR':os.getcwd()+'/lsun'}, {'DATASET':'bedroom'}]
@@ -19,8 +20,21 @@ parser.add_argument('--DATASET', required=False, type=str, default='bedroom')
 # random_noise is created by random normal distribution for each fake image
 # input - batch_size to create random noise equal to the number of batch_size
 # ouput - noise [batch_size, 128]
-def random_noise(batch_size):
-    return np.random.normal(size=[batch_size, 128])
+def random_noise(batch_size, noise):
+    return np.random.normal(size=[batch_size, noise])
+
+
+def plot(samples):
+    fig = plt.figure(figsize=(10, 10))
+    gs = gridspec.GridSpec(10, 10)
+    gs.update(wspace=0.05, hspace=0.05)
+
+    for i, sample in enumerate(samples):
+        ax = plt.subplot(gs[i])
+        plt.axis('off')
+        plt.imshow(sample.reshape(64, 64, 3))
+
+    return fig
 
 
 def input_pipeline(filenames):
@@ -74,7 +88,7 @@ if __name__ == '__main__':
 
     images_dir = check_point_dir + 'images/'
 
-    total_epochs = 100
+    total_epochs = 20000
     BATCH_SIZE = args.BATCH_SIZE
     # d_learning_rate = 0.001
     d_learning_rate = 2e-4
@@ -82,7 +96,7 @@ if __name__ == '__main__':
 
     n_hidden = 256
     # n_input = 112 * 112
-    n_noise = 128
+    n_noise = 100
 
     _mean = 0.0
     _stddev = 0.01
@@ -99,7 +113,7 @@ if __name__ == '__main__':
     with g.as_default():
         train_x, train_y = input_pipeline(files)
 
-        noise = random_noise(BATCH_SIZE)
+        noise = random_noise(BATCH_SIZE, n_noise)
 
         # 1. feed input to graph
         # None because values are wrapped continuously
@@ -108,7 +122,7 @@ if __name__ == '__main__':
         # because GAN is unsupervised learning, it does not require y labels
 
         # noise
-        Z = tf.placeholder(tf.float32, [None, 128])
+        Z = tf.placeholder(tf.float32, [None, n_noise])
         # Z = tf.placeholder(tf.float32, [None, n_noise])
 
         # 2. generator & discriminator
@@ -132,8 +146,8 @@ if __name__ == '__main__':
         dis_vars = [var for var in train_vars if 'dis' in var.name]
 
         # tensorflow's optimizer only offers minimization function
-        dis_train = tf.train.AdamOptimizer(learning_rate=d_learning_rate).minimize(-gen_loss, var_list=gen_vars)
-        gen_train = tf.train.AdamOptimizer(learning_rate=g_learning_rate).minimize(-dis_loss, var_list=dis_vars)
+        dis_train = tf.train.AdamOptimizer(learning_rate=d_learning_rate).minimize(-dis_loss, var_list=dis_vars)
+        gen_train = tf.train.AdamOptimizer(learning_rate=g_learning_rate).minimize(-gen_loss, var_list=gen_vars)
 
     # iterate training and update variables
 
@@ -151,19 +165,20 @@ if __name__ == '__main__':
             # session.run(gen_train, feed_dict={Z: noise})
             # session.run(dis_train, feed_dict={X: train_x.eval(), Z: noise})
 
-            # _, g_loss = session.run([gen_train, gen_loss], feed_dict={Z: noise})
-            # _, d_loss = session.run([dis_train, dis_loss], feed_dict={X: train_x.eval(), Z: noise})
+            session.run(fake_x, feed_dict={Z: noise})
+            _, g_loss = session.run([gen_train, gen_loss], feed_dict={Z: noise})
+            _, d_loss = session.run([dis_train, dis_loss], feed_dict={X: train_x.eval(), Z: noise})
 
-            g_loss, d_loss = session.run([gen_loss, dis_loss], feed_dict={X: train_x.eval(), Z: noise})
+            # g_loss, d_loss = session.run([gen_loss, dis_loss], feed_dict={X: train_x.eval(), Z: noise})
 
             # check performance every 10 epoch
-            if (epoch + 1) % 10 == 0:
+            if (epoch + 1) % 100 == 0:
                 print("=======Epoch : ", epoch + 1, " =======================================")
                 print("generator loss : ", g_loss)
                 print("discriminator loss : ", d_loss)
 
             # check 10 fake images generator creates every 10 epoch
-            if epoch == 0 or (epoch + 1) % 10 == 0:
+            if epoch == 0 or (epoch + 1) % 100 == 0:
                 fig, ax = plt.subplots(1, 10, figsize=(10, 1))
                 for i in range(10):
                     ax[i].set_axis_off()
@@ -172,7 +187,7 @@ if __name__ == '__main__':
                 plt.savefig('check_points/input_{}.png'.format(str(epoch + 1).zfill(3)), bbox_inches='tight')
                 plt.close(fig)
 
-                sample_noise = random_noise(10)
+                sample_noise = random_noise(10, n_noise)
 
                 generated = session.run(fake_x, feed_dict={Z: sample_noise})
 

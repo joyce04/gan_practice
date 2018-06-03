@@ -19,21 +19,28 @@ def discriminate(x, _reuse=False):
     # layer3
     with tf.variable_scope(name_or_scope='dis', reuse=_reuse) as scope:
         dw1 = tf.get_variable(name='w1',
-                              shape=[64* 64* 3, n_hidden],
+                              shape=[64 * 64 * 3, n_hidden * 2],
                               initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
         db1 = tf.get_variable(name='b1',
+                              shape=[n_hidden * 2],
+                              initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
+        dw2 = tf.get_variable(name='w2',
+                              shape=[n_hidden * 2, n_hidden],
+                              initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
+        db2 = tf.get_variable(name='b2',
                               shape=[n_hidden],
                               initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
         # final output is score in regard to how close the given image is to real
-        dw2 = tf.get_variable(name='w2',
+        dw3 = tf.get_variable(name='w3',
                               shape=[n_hidden, 1],
                               initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
-        db2 = tf.get_variable(name='b2',
+        db3 = tf.get_variable(name='b3',
                               shape=[1],
                               initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
 
-    hidden = tf.nn.relu(tf.matmul(x, dw1) + db1)  # [-.256]
-    ouput = tf.nn.sigmoid(tf.matmul(hidden, dw2) + db2)  # [-, 1] real=1 fake=0
+    hidden1 = tf.nn.relu(tf.matmul(x, dw1) + db1)
+    hidden2 = tf.nn.relu(tf.matmul(hidden1, dw2) + db2)  # [-.256]
+    ouput = tf.nn.sigmoid(tf.matmul(hidden2, dw3) + db3)  # [-, 1] real=1 fake=0
     # vanilla GAN has sigmoid in last layer
     return ouput
 

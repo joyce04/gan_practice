@@ -35,6 +35,7 @@ def get_images(path):
                 file_list.append(os.path.join(d, filename))
     return file_list
 
+
 def convert_data(path):
     limit = -1
     out_dir = path + '/data'
@@ -66,6 +67,7 @@ def convert_data(path):
 
     return get_images(path)
 
+
 def read_input_queue(file_que):
     reader = tf.WholeFileReader()
     key, value = reader.read(file_que)
@@ -77,9 +79,8 @@ def read_input_queue(file_que):
     decoded_image = tf.image.decode_jpeg(value, channels=3)
 
     # add dimension 1 at the index 0
-    decoded_image_4d = tf.expand_dims(decoded_image, 0)
-    resized_image = tf.image.resize_bilinear(decoded_image_4d, [64, 64])
-
+    # decoded_image_4d = tf.expand_dims(decoded_image, 0)
+    resized_image = tf.cast(tf.image.resize_images(decoded_image, [64, 64]), tf.uint8)
     # delete dim size 1 from tensor
     in_image = tf.squeeze(resized_image)
     in_image = tf.reshape(in_image, [-1])
@@ -98,3 +99,9 @@ def read_input_queue(file_que):
     #
     #     for i in ragne(self.batch_size):
     #         batch.append(read_input_queue())
+
+# def read_input(file_list):
+#     # path = './data/church_outdoor_train_lmdb/data/'
+#     in_image = [cv2.resize(cv2.imread(img), (64, 64)).reshape(-1) for img in file_list]
+#
+#     return in_image
