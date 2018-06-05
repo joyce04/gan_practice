@@ -88,11 +88,11 @@ if __name__ == '__main__':
 
     images_dir = check_point_dir + 'images/'
 
-    total_epochs = 40000
+    total_epochs = 10000
     BATCH_SIZE = 100#args.BATCH_SIZE
     # d_learning_rate = 0.001
     d_learning_rate = 2e-4
-    g_learning_rate = 2e-3  # 1e-3
+    g_learning_rate = 2e-4  # 1e-3
 
     n_hidden = 256
     n_input = 128 * 128 * 1
@@ -108,7 +108,7 @@ if __name__ == '__main__':
     # path = os.getcwd() + '/lsun/bedroom_train_lmdb'
     path = os.getcwd() + '/lsun/church_outdoor_train_lmdb'
     # path = os.getcwd() + '/lsun/classroom_train_lmdb'
-    files = data.convert_data(path)[:500]
+    files = data.convert_data(path)[:150]
 
     # loss function in GAN represents performance of generator and discriminator
     # both generator and discriminator try to maximize its loss function

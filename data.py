@@ -38,7 +38,7 @@ def get_images(path):
 
 def convert_data(path):
     limit = -1
-    out_dir = path + '/_data'
+    out_dir = path + '/data'
 
     print('Exporting', path, 'to', out_dir)
     lmdb_env = lmdb.open(path,
@@ -79,7 +79,7 @@ def read_input_queue(file_que):
     # 1 greyscale
     # 3 REG
     decoded_image = tf.image.decode_jpeg(value, channels=1)
-    decoded_image = tf.image.adjust_brightness(decoded_image, delta=0.2)
+    decoded_image = tf.image.adjust_brightness(decoded_image, delta=0.4)
     # decoded_image = tf.image.decode_jpeg(value, channels=3)
     decoded_image = tf.image.per_image_standardization(decoded_image)
     # add dimension 1 at the index 0

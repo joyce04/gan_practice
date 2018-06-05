@@ -36,11 +36,11 @@ def discriminate(x, _reuse=False):
                               shape=[n_hidden],
                               initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
         dw2 = tf.get_variable(name='w2',
-                              shape=[n_hidden, n_hidden],
+                              shape=[n_hidden, n_hidden/2],
                               # initializer=xavier_init(n_hidden*2, n_hidden))
                               initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
         db2 = tf.get_variable(name='b2',
-                              shape=[n_hidden],
+                              shape=[n_hidden/2],
                               initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
         # final output is score in regard to how close the given image is to real
         dw3 = tf.get_variable(name='w3',

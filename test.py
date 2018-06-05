@@ -1,6 +1,5 @@
 import tensorflow as tf
 
-
 def xavier_init(n_input, n_output, uniform=True):
     if uniform:
         init_range = tf.sqrt(6. / (n_input + n_output))
@@ -9,14 +8,12 @@ def xavier_init(n_input, n_output, uniform=True):
         stddev = tf.sqrt(3. / (n_input + n_output))
         return tf.truncated_normal_initializer(stddev=stddev)
 
-# generator- with 2 layer NN to create fake images
-# input - noise [-, 128]
-# output - fake images [-, 784]
-# train generator-w1, b1, w2, b2
+# generator- with 3 layer NN to create fake images
+# input - noise [-, 100]
+# output - fake images [-, 128 * 128 * 1]
+# train generator-w1, b1, w2, b2, w3, b3
 
-# mean, stddev class variable로 빼내게
 def generate(z, _reuse=False):
-    # n_hidden = 256
     n_hidden = 8000
     # n_input = 1024#28 * 28
     n_noise = 100  # 128  # 1024  # 128
