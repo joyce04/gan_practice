@@ -6,6 +6,7 @@ import numpy as np
 import generator, discriminator
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import pandas as pd
 
 # parsers fro command line
 # argv = [{'BATCH_SIZE':100}, {'DATA_DIR':os.getcwd()+'/lsun'}, {'DATASET':'bedroom'}]
@@ -21,7 +22,7 @@ parser.add_argument('--DATASET', required=False, type=str, default='bedroom')
 # input - batch_size to create random noise equal to the number of batch_size
 # ouput - noise [batch_size, 100]
 def random_noise(batch_size, noise):
-    return np.random.uniform(-1., 1., size=[batch_size, noise])
+    return np.random.normal(loc=0.0, scale=0.01, size=[batch_size, noise])
 
 
 def plot(samples):
@@ -46,7 +47,7 @@ def input_pipeline(filenames):
     label = True  # np.ones(real_images.shape[0])
     print(real_images.shape)
     # min_after_dequeue defines how big a buffer we will randomly sample from
-    min_after_dequeue = 10
+    min_after_dequeue = 100
     # capacity recommended by tensorflow
     capacity = min_after_dequeue + BATCH_SIZE
     image_batch, label_batch = tf.train.shuffle_batch([real_images, label]
@@ -88,8 +89,8 @@ if __name__ == '__main__':
 
     images_dir = check_point_dir + 'images/'
 
-    total_epochs = 10000
-    BATCH_SIZE = 100#args.BATCH_SIZE
+    total_epochs = 1000
+    BATCH_SIZE = 50#args.BATCH_SIZE
     # d_learning_rate = 0.001
     d_learning_rate = 2e-4
     g_learning_rate = 2e-4  # 1e-3
@@ -108,7 +109,7 @@ if __name__ == '__main__':
     # path = os.getcwd() + '/lsun/bedroom_train_lmdb'
     path = os.getcwd() + '/lsun/church_outdoor_train_lmdb'
     # path = os.getcwd() + '/lsun/classroom_train_lmdb'
-    files = data.convert_data(path)[:150]
+    files = data.convert_data(path)[:180]
 
     # loss function in GAN represents performance of generator and discriminator
     # both generator and discriminator try to maximize its loss function
@@ -163,6 +164,8 @@ if __name__ == '__main__':
         reuse = True
 
     # iterate training and update variables
+    train_g_loss_his = []
+    train_d_loss_his = []
     with tf.Session(graph=g) as session:
         saver = tf.train.Saver()
         session.run(tf.global_variables_initializer())
@@ -188,13 +191,15 @@ if __name__ == '__main__':
             # g_loss, d_loss = session.run([gen_loss, dis_loss], feed_dict={X: train_x.eval(), Z: noise})
 
             # check performance every 10 epoch
-            if (epoch + 1) % 20 == 0:
+            if (epoch + 1) % 10 == 0:
                 print("=======Epoch : ", epoch + 1, " =======================================")
                 print("generator loss : ", train_dis_loss)
                 print("discriminator loss : ", train_gen_loss)
+                train_d_loss_his.append({'x': epoch + 1, 'y': train_gen_loss})
+                train_g_loss_his.append({'x': epoch + 1, 'y': train_dis_loss})
 
             # check 10 fake images generator creates every 10 epoch
-            if epoch == 0 or (epoch + 1) % 20 == 0:
+            if epoch == 0 or (epoch + 1) % 10 == 0:
                 fig, ax = plt.subplots(1, 10, figsize=(10, 1))
                 for i in range(10):
                     ax[i].set_axis_off()
@@ -219,6 +224,22 @@ if __name__ == '__main__':
         coordinator.request_stop()
         coordinator.join(threads)
         print('optimization finished')
+
+        gen_his = pd.DataFrame(train_g_loss_his)
+        gen_his.columns = ['x', 'y']
+        disc_his = pd.DataFrame(train_d_loss_his)
+        disc_his.columns = ['x', 'y']
+
+        sub = plt.subplot(2, 1, 1)
+        plt.title('Training loss')
+        plt.xlabel('iteration(Epoch)')
+        plt.plot(gen_his.x.tolist(), gen_his.y.tolist(), '-', label='generator')
+        plt.plot(disc_his.x.tolist(), disc_his.y.tolist(), '-', label='discriminator')
+        # plt.legend(loc='lower right')
+        plt.legend()
+        plt.gcf().set_size_inches(15, 12)
+        plt.savefig('training_loss.png', bbox_inches='tight')
+        plt.show()
 
 # #Running a new session
 # print('Starting 2nd session')

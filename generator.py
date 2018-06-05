@@ -16,36 +16,32 @@ def xavier_init(n_input, n_output, uniform=True):
 
 # mean, stddev class variable로 빼내게
 def generate(z, _reuse=False):
-    # n_hidden = 256
-    n_hidden = 8000
-    # n_input = 1024#28 * 28
-    n_noise = 100  # 128  # 1024  # 128
-
+    n_hidden = 256
+    # n_hidden = 1024#8192
+    n_noise = 100
     _mean = 0.0
     _stddev = 0.01
 
-    # initialize
     with tf.variable_scope(name_or_scope='gen', reuse=_reuse) as scope:
         gw1 = tf.get_variable(name='w1',
                               shape=[n_noise, n_hidden],
                               initializer=xavier_init(n_noise, n_hidden))
-        # initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
 
         gb1 = tf.get_variable(name='b1',
                               shape=[n_hidden],
                               initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
         gw2 = tf.get_variable(name='w2',
-                              shape=[n_hidden, n_hidden/2],
-                              initializer=xavier_init(n_hidden, n_hidden/2))
+                              shape=[n_hidden, n_hidden*2],
+                              initializer=xavier_init(n_hidden, n_hidden*2))
                               # initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
         gb2 = tf.get_variable(name='b2',
-                              shape=[n_hidden/2],
+                              shape=[n_hidden*2],
                               initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
         gw3 = tf.get_variable(name="w3",
                               # shape=[n_hidden/2, 64 * 64 * 1],
-                              shape=[n_hidden/2, 128 * 128 * 1],
+                              shape=[n_hidden*2, 128 * 128 * 1],
                               # shape=[n_hidden/2, 256 * 256 * 3],
-                              initializer=xavier_init(n_hidden/2, 128 * 128 * 1))
+                              initializer=xavier_init(n_hidden*2, 128 * 128 * 1))
                               # initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
         gb3 = tf.get_variable(name="b3",
                               # shape=[64 * 64 * 1],
