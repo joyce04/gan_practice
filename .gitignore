@@ -1,1 +1,7 @@
+.gitignore
 .idea/*
+.DS_Store
+__pycache__/*
+check_points_8000_RGB1/*
+mnist/*
+check_points/*

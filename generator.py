@@ -17,7 +17,7 @@ def xavier_init(n_input, n_output, uniform=True):
 # output - fake images [-, 784]
 # train generator-w1, b1, w2, b2
 def vanilla_generate(z, _reuse=False):
-    n_hidden = 512#256  # 128#64#256
+    n_hidden = 64
     n_noise = 128
     _mean = 0.0
     _stddev = 0.01
@@ -54,6 +54,7 @@ def vanilla_generate(z, _reuse=False):
     return output
 
 
+# implementation of DCGAN generator with convolutional transpose layers
 def dc_generate(z, _reuse=False):
     bn_params = {
         "decay": 0.99,
@@ -61,13 +62,14 @@ def dc_generate(z, _reuse=False):
         "scale": True,
         "is_training": True
     }
-    initial_shape = 4 * 4 * 1024
+    initial_shape_multi = 4 * 4 * 1024
+    initial_shape = [-1, 4, 4, 1024]
 
     with tf.variable_scope('gen', reuse=_reuse):
         # to reshape the given noise
         net = z
-        net = slim.fully_connected(net, initial_shape, activation_fn=tf.nn.relu)
-        net = tf.reshape(net, [-1, 4, 4, 1024])
+        net = slim.fully_connected(net, initial_shape_multi, activation_fn=tf.nn.relu)
+        net = tf.reshape(net, initial_shape)
 
         # for mnist datasets
         # net = slim.fully_connected(net, 7 * 7 * 4, activation_fn=tf.nn.relu)

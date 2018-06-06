@@ -3,6 +3,10 @@ import tensorflow as tf
 slim = tf.contrib.slim
 
 
+# xavier_init function to keep the scale of the gradients rougly the same in all layers
+# n_input : the number of input nodes into each output
+# n_outputs : the number of ouput nodes for each input
+# uniform : if true use a uniform distribution, otherwise use a normal
 def xavier_init(n_input, n_output, uniform=True):
     if uniform:
         init_range = tf.sqrt(6. / (n_input + n_output))
