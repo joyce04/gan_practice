@@ -32,7 +32,7 @@ def input_pipeline(filenames, total_epochs, mini_batch_size):
 
 
 def run_gan(files, total_epochs, batch_size, model_type):
-    n_input = 128 * 128 * 3
+    n_input = 64 * 64 * 3
     n_noise = 128
     model_path = 'check_points/model'
     mini_batch_size = 50
@@ -147,7 +147,7 @@ def run_gan(files, total_epochs, batch_size, model_type):
                     ax[i].set_axis_off()
                     real_images_ = tf.expand_dims(train_x.eval()[i], 0)
                     # real_images_ = tf.expand_dims(train_x[i], 0)
-                    ax[i].imshow(tf.reshape(real_images_, (128, 128, 3)).eval())
+                    ax[i].imshow(tf.reshape(real_images_, (64, 64, 3)).eval())
                     # ax[i].imshow(tf.reshape(real_images_, (28, 28)).eval())
                 plt.savefig('check_points/input_{}.png'.format(str(epoch + 1).zfill(3)), bbox_inches='tight')
                 plt.close(fig)
@@ -158,7 +158,7 @@ def run_gan(files, total_epochs, batch_size, model_type):
                 fig, ax = plt.subplots(1, 10, figsize=(10, 1))
                 for i in range(10):
                     ax[i].set_axis_off()
-                    ax[i].imshow(tf.reshape(generated[i], (128, 128, 3)).eval())
+                    ax[i].imshow(tf.reshape(generated[i], (64, 64, 3)).eval())
                     # ax[i].imshow(tf.reshape(generated[i], (28, 28)).eval())
                 plt.savefig('check_points/{}.png'.format(str(epoch + 1).zfill(3)), bbox_inches='tight')
                 plt.close(fig)
