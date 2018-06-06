@@ -86,7 +86,7 @@ if __name__ == '__main__':
     g_learning_rate = 2e-3  # 1e-3
 
     n_hidden = 256
-    n_input = 128 * 128 * 3
+    n_input = 64 * 64 * 3
     # n_input = 128 * 128 * 1
     n_noise = 128  # 100
     model_type = 'dc' #args.BATCH_SIZE
@@ -205,7 +205,7 @@ if __name__ == '__main__':
                         ax[i].set_axis_off()
                         real_images_ = tf.expand_dims(train_x.eval()[i], 0)
                         # real_images_ = tf.expand_dims(train_x[i], 0)
-                        ax[i].imshow(tf.reshape(real_images_, (128, 128, 3)).eval())
+                        ax[i].imshow(tf.reshape(real_images_, (64, 64, 3)).eval())
                         # ax[i].imshow(tf.reshape(real_images_, (28, 28)).eval())
                     plt.savefig('check_points/input_{}.png'.format(str(epoch + 1).zfill(3)), bbox_inches='tight')
                     plt.close(fig)
@@ -216,7 +216,7 @@ if __name__ == '__main__':
                     fig, ax = plt.subplots(1, 10, figsize=(10, 1))
                     for i in range(10):
                         ax[i].set_axis_off()
-                        ax[i].imshow(tf.reshape(generated[i], (128, 128, 3)).eval())
+                        ax[i].imshow(tf.reshape(generated[i], (64, 64, 3)).eval())
                         # ax[i].imshow(tf.reshape(generated[i], (28, 28)).eval())
                     plt.savefig('check_points/{}.png'.format(str(epoch + 1).zfill(3)), bbox_inches='tight')
                     plt.close(fig)

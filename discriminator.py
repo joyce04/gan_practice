@@ -77,8 +77,8 @@ def dc_discriminate(x, _reuse=False):
         "scale": True,
         "is_training": True
     }
-    with tf.variable_scope('D', reuse=_reuse):
-        net = x
+    with tf.variable_scope('dis', reuse=_reuse):
+        net = tf.reshape(x, [-1, 4, 4, 1024])
 
         # strided convolutions in discriminator
         with slim.arg_scope([slim.conv2d], kernel_size=[5, 5], stride=2, padding='SAME', activation_fn=lrelu,

@@ -83,8 +83,8 @@ def read_input_queue(file_que):
     decoded_image = tf.image.decode_jpeg(value, channels=3)
     # decoded_image = tf.image.per_image_standardization(decoded_image)
     # add dimension 1 at the index 0
-    # resized_image = tf.cast(tf.image.resize_images(decoded_image, [64, 64]), tf.uint8)
-    resized_image = tf.cast(tf.image.resize_images(decoded_image, [128, 128]), tf.uint8)
+    resized_image = tf.cast(tf.image.resize_images(decoded_image, [64, 64]), tf.uint8)
+    # resized_image = tf.cast(tf.image.resize_images(decoded_image, [128, 128]), tf.uint8)
 
     # delete dim size 1 from tensor
     in_image = tf.squeeze(resized_image)

@@ -67,7 +67,7 @@ def dc_generate(z, _reuse=False):
         # to reshape the given noise
         net = z
         net = slim.fully_connected(net, initial_shape, activation_fn=tf.nn.relu)
-        net = tf.reshape(net, [-1, initial_shape])
+        net = tf.reshape(net, [-1, 4, 4, 1024])
 
         # for mnist datasets
         # net = slim.fully_connected(net, 7 * 7 * 4, activation_fn=tf.nn.relu)
