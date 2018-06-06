@@ -7,35 +7,28 @@ import generator, discriminator
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import pandas as pd
+# from tensorflow.examples.tutorials.mnist import input_data
+
+# test with the simplest data
+# mnist = input_data.read_data_sets("./mnist/data/", one_hot=True)
 
 # parsers fro command line
-# argv = [{'BATCH_SIZE':100}, {'DATA_DIR':os.getcwd()+'/lsun'}, {'DATASET':'bedroom'}]
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--BATCH_SIZE', required=False, type=int, default=100)
 parser.add_argument('--DATA_DIR', required=False, type=str, help='Directory containing images',
+# parser.add_argument('--DATA_DIR', required=True, type=str, help='Directory containing images',
                     default=os.getcwd() + '/lsun')
+# parser.add_argument('--DATASET', required=True, type=str, default='bedroom')
 parser.add_argument('--DATASET', required=False, type=str, default='bedroom')
+parser.add_argument('--TYPE', required=False, type=str, default='vanilla')
 
 
 # random_noise is created by random normal distribution for each fake image
 # input - batch_size to create random noise equal to the number of batch_size
-# ouput - noise [batch_size, 100]
 def random_noise(batch_size, noise):
-    return np.random.normal(loc=0.0, scale=0.01, size=[batch_size, noise])
-
-
-def plot(samples):
-    fig = plt.figure(figsize=(10, 10))
-    gs = gridspec.GridSpec(10, 10)
-    gs.update(wspace=0.05, hspace=0.05)
-
-    for i, sample in enumerate(samples):
-        ax = plt.subplot(gs[i])
-        plt.axis('off')
-        plt.imshow(sample.reshape(64, 64, 1))
-
-    return fig
+    return np.random.normal(size=[batch_size, noise])
+    # return np.random.normal(loc=0.0, scale=0.01, size=[batch_size, noise])
 
 
 def input_pipeline(filenames):
@@ -44,7 +37,7 @@ def input_pipeline(filenames):
                                                     , shuffle=True)
 
     real_images = data.read_input_queue(filename_queue)
-    label = True  # np.ones(real_images.shape[0])
+    label = True
     print(real_images.shape)
     # min_after_dequeue defines how big a buffer we will randomly sample from
     min_after_dequeue = 100
@@ -75,41 +68,35 @@ if __name__ == '__main__':
     except Exception:
         pass
 
-    try:
-        os.mkdir(check_point_dir)
-        print("Directory dataset within check point created : " + dirpath + "/" + check_point_dir)
-    except Exception:
-        pass
-
-    try:
-        os.mkdir(check_point_dir + 'images/')
-        print("Directory image within dataset created : " + dirpath + "/" + check_point_dir + 'images')
-    except Exception:
-        pass
-
-    images_dir = check_point_dir + 'images/'
+    # try:
+    #     os.mkdir(check_point_dir)
+    #     print("Directory dataset within check point created : " + dirpath + "/" + check_point_dir)
+    # except Exception:
+    #     pass
+    #
+    # try:
+    #     os.mkdir(check_point_dir + 'images/')
+    #     print("Directory image within dataset created : " + dirpath + "/" + check_point_dir + 'images')
+    # except Exception:
+    #     pass
 
     total_epochs = 1000
-    BATCH_SIZE = 50#args.BATCH_SIZE
-    # d_learning_rate = 0.001
-    d_learning_rate = 2e-4
-    g_learning_rate = 2e-4  # 1e-3
+    BATCH_SIZE = 100  # args.BATCH_SIZE
+    d_learning_rate = 2e-3
+    g_learning_rate = 2e-3  # 1e-3
 
     n_hidden = 256
-    n_input = 128 * 128 * 1
-    # n_input = 256 * 256 * 3
-    n_noise = 100
+    n_input = 128 * 128 * 3
+    # n_input = 128 * 128 * 1
+    n_noise = 128  # 100
+    model_type = 'dc' #args.BATCH_SIZE
 
     _mean = 0.0
     _stddev = 0.01
-    #label smooth parameter
-    smooth = 0.1
 
     model_path = 'check_points/model'
-    # path = os.getcwd() + '/lsun/bedroom_train_lmdb'
     path = os.getcwd() + '/lsun/church_outdoor_train_lmdb'
-    # path = os.getcwd() + '/lsun/classroom_train_lmdb'
-    files = data.convert_data(path)[:180]
+    files = data.convert_data(path)[:1000]
 
     # loss function in GAN represents performance of generator and discriminator
     # both generator and discriminator try to maximize its loss function
@@ -117,6 +104,7 @@ if __name__ == '__main__':
     reuse = False
     with g.as_default():
         train_x, train_y = input_pipeline(files)
+        # train_x, train_y = mnist.train.next_batch(BATCH_SIZE)
 
         noise = random_noise(BATCH_SIZE, n_noise)
 
@@ -129,10 +117,17 @@ if __name__ == '__main__':
         Z = tf.placeholder(tf.float32, [None, n_noise])
 
         # 2. generator & discriminator
-        fake_x = generator.generate(Z)
+        if model_type == 'vanilla':
 
-        real_result, real_logists = discriminator.discriminate(X)
-        fake_result, fake_logists = discriminator.discriminate(fake_x, True)
+            fake_x = generator.vanilla_generate(Z)
+
+            real_result, real_logists = discriminator.vanilla_discriminate(X)
+            fake_result, fake_logists = discriminator.vanilla_discriminate(fake_x, True)
+        else:
+            fake_x = generator.dc_generate(Z)
+
+            real_result, real_logists = discriminator.dc_discriminate(X)
+            fake_result, fake_logists = discriminator.dc_discriminate(fake_x, True)
 
         # 3. loss functions
         # both want high gen_loss and dis_loss but both are in inverse relationship
@@ -145,8 +140,8 @@ if __name__ == '__main__':
             tf.nn.sigmoid_cross_entropy_with_logits(logits=real_logists, labels=tf.ones_like(real_logists)))
         dis_loss_fake = tf.reduce_mean(
             tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_logists, labels=tf.zeros_like(real_logists)))
-        # dis_loss = dis_loss_real*0.7 + dis_loss_fake*1.0
-        dis_loss = dis_loss_real + dis_loss_fake
+        dis_loss = dis_loss_real * 0.7 + dis_loss_fake * 1.0
+        # dis_loss = dis_loss_real + dis_loss_fake
         gen_loss = tf.reduce_mean(
             tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_logists, labels=tf.ones_like(fake_logists)))
 
@@ -158,88 +153,97 @@ if __name__ == '__main__':
 
         # tensorflow's optimizer only offers minimization function
         dis_train = tf.train.AdamOptimizer(learning_rate=d_learning_rate, beta1=0.5).minimize(dis_loss,
-                                                                                   var_list=dis_vars)
+                                                                                              var_list=dis_vars)
         gen_train = tf.train.AdamOptimizer(learning_rate=g_learning_rate, beta1=0.5).minimize(gen_loss,
-                                                                                   var_list=gen_vars)
+                                                                                              var_list=gen_vars)
         reuse = True
 
     # iterate training and update variables
     train_g_loss_his = []
     train_d_loss_his = []
-    with tf.Session(graph=g) as session:
-        saver = tf.train.Saver()
-        session.run(tf.global_variables_initializer())
-        session.run(tf.local_variables_initializer())
-        coordinator = tf.train.Coordinator()
+    try:
+        with tf.Session(graph=g) as session:
+            saver = tf.train.Saver()
+            session.run(tf.global_variables_initializer())
+            session.run(tf.local_variables_initializer())
+            coordinator = tf.train.Coordinator()
 
-        threads = tf.train.start_queue_runners(session, coordinator)
-        print('Start training')
+            threads = tf.train.start_queue_runners(session, coordinator)
+            print('Start training')
+            # total_batch = int(mnist.train.num_examples/BATCH_SIZE)
 
-        for epoch in range(total_epochs):
-            # print(train_x.eval())
-            # print(noise)
-            # session.run(gen_train, feed_dict={Z: noise})
-            # session.run(dis_train, feed_dict={X: train_x.eval(), Z: noise})
-            noise = random_noise(BATCH_SIZE, n_noise)
-            # samples = session.run(fake_x, feed_dict={Z: noise})
-            _ = session.run(gen_train, feed_dict={Z: noise})
-            _ = session.run(dis_train, feed_dict={X: train_x.eval(), Z: noise})
+            for epoch in range(total_epochs):
+                # for i in range(total_batch):
+                #     train_x, train_y = mnist.train.next_batch(BATCH_SIZE)
+                # print(train_x.eval())
+                # print(noise)
+                # session.run(gen_train, feed_dict={Z: noise})
+                # session.run(dis_train, feed_dict={X: train_x.eval(), Z: noise})
+                noise = random_noise(BATCH_SIZE, n_noise)
 
-            train_dis_loss = session.run(dis_loss, feed_dict={X: train_x.eval(), Z: noise})
-            train_gen_loss = gen_loss.eval({Z: noise})
+                _ = session.run(gen_train, feed_dict={Z: noise})
+                _ = session.run(dis_train, feed_dict={X: train_x.eval(), Z: noise})
+                # _ = session.run(dis_train, feed_dict={X: train_x, Z: noise})
 
-            # g_loss, d_loss = session.run([gen_loss, dis_loss], feed_dict={X: train_x.eval(), Z: noise})
+                train_dis_loss = session.run(dis_loss, feed_dict={X: train_x.eval(), Z: noise})
+                # train_dis_loss = session.run(dis_loss, feed_dict={X: train_x, Z: noise})
+                train_gen_loss = gen_loss.eval({Z: noise})
+                # g_loss, d_loss = session.run([gen_loss, dis_loss], feed_dict={X: train_x.eval(), Z: noise})
 
-            # check performance every 10 epoch
-            if (epoch + 1) % 10 == 0:
-                print("=======Epoch : ", epoch + 1, " =======================================")
-                print("generator loss : ", train_dis_loss)
-                print("discriminator loss : ", train_gen_loss)
-                train_d_loss_his.append({'x': epoch + 1, 'y': train_gen_loss})
-                train_g_loss_his.append({'x': epoch + 1, 'y': train_dis_loss})
+                # check performance every 10 epoch
+                if (epoch + 1) % 50 == 0:
+                    print("=======Epoch : ", epoch + 1, " =======================================")
+                    print("generator loss : ", train_dis_loss)
+                    print("discriminator loss : ", train_gen_loss)
+                    train_d_loss_his.append({'x': epoch + 1, 'y': train_gen_loss})
+                    train_g_loss_his.append({'x': epoch + 1, 'y': train_dis_loss})
 
-            # check 10 fake images generator creates every 10 epoch
-            if epoch == 0 or (epoch + 1) % 10 == 0:
-                fig, ax = plt.subplots(1, 10, figsize=(10, 1))
-                for i in range(10):
-                    ax[i].set_axis_off()
-                    real_images_ = tf.expand_dims(train_x.eval()[i], 0)
-                    ax[i].imshow(tf.reshape(real_images_, (128, 128)).eval())
-                plt.savefig('check_points/input_{}.png'.format(str(epoch + 1).zfill(3)), bbox_inches='tight')
-                plt.close(fig)
+                    # check 10 fake images and input images
+                if epoch == 0 or (epoch + 1) % 50 == 0:
+                    fig, ax = plt.subplots(1, 10, figsize=(10, 1))
+                    for i in range(10):
+                        ax[i].set_axis_off()
+                        real_images_ = tf.expand_dims(train_x.eval()[i], 0)
+                        # real_images_ = tf.expand_dims(train_x[i], 0)
+                        ax[i].imshow(tf.reshape(real_images_, (128, 128, 3)).eval())
+                        # ax[i].imshow(tf.reshape(real_images_, (28, 28)).eval())
+                    plt.savefig('check_points/input_{}.png'.format(str(epoch + 1).zfill(3)), bbox_inches='tight')
+                    plt.close(fig)
 
-                sample_noise = random_noise(10, n_noise)
+                    sample_noise = random_noise(10, n_noise)
 
-                generated = session.run(fake_x, feed_dict={Z: sample_noise})
-                # generated = 0.5 * generated + 0.5
-                fig, ax = plt.subplots(1, 10, figsize=(10, 1))
-                for i in range(10):
-                    ax[i].set_axis_off()
-                    ax[i].imshow(tf.reshape(generated[i], (128, 128)).eval())
-                plt.savefig('check_points/{}.png'.format(str(epoch + 1).zfill(3)), bbox_inches='tight')
-                plt.close(fig)
+                    generated = session.run(fake_x, feed_dict={Z: sample_noise})
+                    fig, ax = plt.subplots(1, 10, figsize=(10, 1))
+                    for i in range(10):
+                        ax[i].set_axis_off()
+                        ax[i].imshow(tf.reshape(generated[i], (128, 128, 3)).eval())
+                        # ax[i].imshow(tf.reshape(generated[i], (28, 28)).eval())
+                    plt.savefig('check_points/{}.png'.format(str(epoch + 1).zfill(3)), bbox_inches='tight')
+                    plt.close(fig)
 
-        save_path = saver.save(session, model_path)
-        print('model saved in file : %s' % save_path)
-        coordinator.request_stop()
-        coordinator.join(threads)
-        print('optimization finished')
+            save_path = saver.save(session, model_path)
+            print('model saved in file : %s' % save_path)
+            coordinator.request_stop()
+            coordinator.join(threads)
+            print('optimization finished')
 
-        gen_his = pd.DataFrame(train_g_loss_his)
-        gen_his.columns = ['x', 'y']
-        disc_his = pd.DataFrame(train_d_loss_his)
-        disc_his.columns = ['x', 'y']
+    except Exception as e:
+        print(e)
 
-        sub = plt.subplot(2, 1, 1)
-        plt.title('Training loss')
-        plt.xlabel('iteration(Epoch)')
-        plt.plot(gen_his.x.tolist(), gen_his.y.tolist(), '-', label='generator')
-        plt.plot(disc_his.x.tolist(), disc_his.y.tolist(), '-', label='discriminator')
-        # plt.legend(loc='lower right')
-        plt.legend()
-        plt.gcf().set_size_inches(15, 12)
-        plt.savefig('training_loss.png', bbox_inches='tight')
-        plt.show()
+    gen_his = pd.DataFrame(train_g_loss_his)
+    gen_his.columns = ['x', 'y']
+    disc_his = pd.DataFrame(train_d_loss_his)
+    disc_his.columns = ['x', 'y']
+
+    sub = plt.subplot(2, 1, 1)
+    plt.title('Training loss')
+    plt.xlabel('iteration(Epoch)')
+    plt.plot(gen_his.x.tolist(), gen_his.y.tolist(), '-', label='generator')
+    plt.plot(disc_his.x.tolist(), disc_his.y.tolist(), '-', label='discriminator')
+    plt.legend()
+    plt.gcf().set_size_inches(15, 12)
+    plt.savefig('training_loss.png', bbox_inches='tight')
+    plt.show()
 
 # #Running a new session
 # print('Starting 2nd session')
@@ -248,4 +252,4 @@ if __name__ == '__main__':
 #     session.run(local_initializer)
 #
 #     saver.restore(session, model_path)
-#     print('Model restored')
+#     print('Model restored')...

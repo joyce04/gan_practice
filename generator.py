@@ -1,5 +1,7 @@
 import tensorflow as tf
 
+slim = tf.contrib.slim
+
 
 def xavier_init(n_input, n_output, uniform=True):
     if uniform:
@@ -9,50 +11,79 @@ def xavier_init(n_input, n_output, uniform=True):
         stddev = tf.sqrt(3. / (n_input + n_output))
         return tf.truncated_normal_initializer(stddev=stddev)
 
+
 # generator- with 2 layer NN to create fake images
 # input - noise [-, 128]
 # output - fake images [-, 784]
 # train generator-w1, b1, w2, b2
-
-# mean, stddev class variable로 빼내게
-def generate(z, _reuse=False):
-    n_hidden = 256
-    # n_hidden = 1024#8192
-    n_noise = 100
+def vanilla_generate(z, _reuse=False):
+    n_hidden = 512#256  # 128#64#256
+    n_noise = 128
     _mean = 0.0
     _stddev = 0.01
+    n_output = 128 * 128 * 3
 
-    with tf.variable_scope(name_or_scope='gen', reuse=_reuse) as scope:
+    with tf.variable_scope(name_or_scope='gen', reuse=_reuse):
         gw1 = tf.get_variable(name='w1',
                               shape=[n_noise, n_hidden],
                               initializer=xavier_init(n_noise, n_hidden))
+        # initializer = tf.random_normal_initializer(mean=_mean, stddev=_stddev))
 
         gb1 = tf.get_variable(name='b1',
                               shape=[n_hidden],
                               initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
         gw2 = tf.get_variable(name='w2',
-                              shape=[n_hidden, n_hidden*2],
-                              initializer=xavier_init(n_hidden, n_hidden*2))
-                              # initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
+                              shape=[n_hidden, n_hidden * 2],
+                              initializer=xavier_init(n_hidden, n_hidden * 2))
+        # initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
         gb2 = tf.get_variable(name='b2',
-                              shape=[n_hidden*2],
+                              shape=[n_hidden * 2],
                               initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
         gw3 = tf.get_variable(name="w3",
-                              # shape=[n_hidden/2, 64 * 64 * 1],
-                              shape=[n_hidden*2, 128 * 128 * 1],
-                              # shape=[n_hidden/2, 256 * 256 * 3],
-                              initializer=xavier_init(n_hidden*2, 128 * 128 * 1))
-                              # initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
+                              shape=[n_hidden * 2, n_output],
+                              initializer=xavier_init(n_hidden * 2, n_output))
+        # initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
         gb3 = tf.get_variable(name="b3",
-                              # shape=[64 * 64 * 1],
-                              shape=[128 * 128 * 1],
-                              # shape=[256 * 256 * 3],
+                              shape=[n_output],
                               initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
 
     hidden1 = tf.nn.leaky_relu(tf.matmul(z, gw1) + gb1)
     hidden2 = tf.nn.leaky_relu(tf.matmul(hidden1, gw2) + gb2)
     output = tf.nn.sigmoid(tf.matmul(hidden2, gw3) + gb3)
-    # normalize inputs(images between -1 and 1) by applying Tanh
-    # output = tf.nn.tanh(tf.matmul(hidden2, gw3) + gb3)
 
     return output
+
+
+def dc_generate(z, _reuse=False):
+    bn_params = {
+        "decay": 0.99,
+        "epsilon": 1e-5,
+        "scale": True,
+        "is_training": True
+    }
+    initial_shape = 4 * 4 * 1024
+
+    with tf.variable_scope('gen', reuse=_reuse):
+        # to reshape the given noise
+        net = z
+        net = slim.fully_connected(net, initial_shape, activation_fn=tf.nn.relu)
+        net = tf.reshape(net, [-1, initial_shape])
+
+        # for mnist datasets
+        # net = slim.fully_connected(net, 7 * 7 * 4, activation_fn=tf.nn.relu)
+        # net = tf.reshape(net, [-1, 7, 7, 4])
+
+        # transposed convolutions
+        with slim.arg_scope([slim.conv2d_transpose], kernel_size=[5, 5], stride=2, padding='SAME',
+                            activation_fn=tf.nn.relu, normalizer_fn=slim.batch_norm,
+                            normalizer_params=bn_params):
+            net = slim.conv2d_transpose(net, 512)
+            net = slim.conv2d_transpose(net, 256)
+            net = slim.conv2d_transpose(net, 128)
+            net = slim.conv2d_transpose(net, 3, activation_fn=tf.nn.tanh, normalizer_fn=None)
+
+            # for mnist dataset
+            # net = slim.conv2d_transpose(net, 2)
+            # net = slim.conv2d_transpose(net, 1, activation_fn=tf.nn.tanh, normalizer_fn=None)
+
+            return net
