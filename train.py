@@ -46,6 +46,6 @@ if __name__ == '__main__':
 
     files = data.convert_data(path)
     if len(files) > 3000:
-        files = files[:2000]
+        files = files[:3000]
 
     gan.run_gan(files, total_epochs, BATCH_SIZE, model_type)
