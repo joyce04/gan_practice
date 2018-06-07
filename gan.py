@@ -93,9 +93,9 @@ def run_gan(files, total_epochs, batch_size, model_type):
 
         # tensorflow's optimizer only offers minimization function
         dis_train = tf.train.AdamOptimizer(learning_rate=d_learning_rate, beta1=0.5).minimize(dis_loss,
-                                                                                              var_list=dis_vars, global_step=global_step)
+                                                                                              var_list=dis_vars)
         gen_train = tf.train.AdamOptimizer(learning_rate=g_learning_rate, beta1=0.5).minimize(gen_loss,
-                                                                                              var_list=gen_vars, global_step=global_step)
+                                                                                              var_list=gen_vars)
 
     # iterate training and update variables
     # train_g_loss_his = []
