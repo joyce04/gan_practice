@@ -58,10 +58,10 @@ def read_input_queue(file_que):
     # 0 used the number of channels in the JPEG-encoded image
     # 1 greyscale
     # 3 REG
-    decoded_image = tf.image.decode_jpeg(value, channels=1)
-    decoded_image = tf.image.adjust_brightness(decoded_image, delta=0.4)
-    # decoded_image = tf.image.decode_jpeg(value, channels=3)
-    decoded_image = tf.image.per_image_standardization(decoded_image)
+    # decoded_image = tf.image.decode_jpeg(value, channels=1)
+    # decoded_image = tf.image.adjust_brightness(decoded_image, delta=0.4)
+    decoded_image = tf.image.decode_jpeg(value, channels=3)
+    # decoded_image = tf.image.per_image_standardization(decoded_image)
     # add dimension 1 at the index 0
     resized_image = tf.cast(tf.image.resize_images(decoded_image, [64, 64]), tf.uint8)
     # resized_image = tf.cast(tf.image.resize_images(decoded_image, [128, 128]), tf.uint8)
