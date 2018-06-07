@@ -38,7 +38,7 @@ if __name__ == '__main__':
     except Exception:
         pass
 
-    total_epochs = 50
+    total_epochs = 200
 
     path = DATA_DIR #os.getcwd() + '/lsun/church_outdoor_train_lmdb'
     print('Running with data in %s' % DATA_DIR)
