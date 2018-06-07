@@ -45,9 +45,9 @@ if __name__ == '__main__':
 
     model_type = 'vanilla'  # 'dc' #args.BATCH_SIZE
 
-    path = os.getcwd() + '/lsun/church_outdoor_train_lmdb'
+    path = DATA_DIR #os.getcwd() + '/lsun/church_outdoor_train_lmdb'
 
     files = data.convert_data(path)
-    # files = files[len(files) - 4000:]
+    files = files[:4000]
 
     gan.run_gan(files, total_epochs, BATCH_SIZE, model_type)
