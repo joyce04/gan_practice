@@ -38,14 +38,14 @@ if __name__ == '__main__':
     except Exception:
         pass
 
-    total_epochs = 10000
+    total_epochs = 50
 
     path = DATA_DIR #os.getcwd() + '/lsun/church_outdoor_train_lmdb'
     print('Running with data in %s' % DATA_DIR)
     print('Running with data in %s' % DATA_DIR)
 
     files = data.convert_data(path)
-    if len(files) > 2000:
-        files = files[:2000]
+    if len(files) > 1000:
+        files = files[:1000]
 
     gan.run_gan(files, total_epochs, BATCH_SIZE, model_type)

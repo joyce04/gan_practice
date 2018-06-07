@@ -17,7 +17,7 @@ def xavier_init(n_input, n_output, uniform=True):
 # output - fake images [-, 64 * 64 * 3]
 # train generator-w1, b1, w2, b2
 def vanilla_generate(z, _reuse=False):
-    n_hidden = 64
+    n_hidden = 32
     n_noise = 128
     _mean = 0.0
     _stddev = 0.01

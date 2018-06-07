@@ -31,7 +31,7 @@ def input_pipeline(filenames, total_epochs, mini_batch_size):
 def run_gan(files, total_epochs, batch_size, model_type):
     n_input = 64 * 64 * 3
     n_noise = 128
-    model_path = 'check_points/model_save'
+    model_path = 'check_points/model_save/'
     mini_batch_size = 50
     d_learning_rate = 2e-4
     g_learning_rate = 2e-3  # 1e-3
@@ -93,18 +93,20 @@ def run_gan(files, total_epochs, batch_size, model_type):
 
         # tensorflow's optimizer only offers minimization function
         dis_train = tf.train.AdamOptimizer(learning_rate=d_learning_rate, beta1=0.5).minimize(dis_loss,
-                                                                                              var_list=dis_vars)
+                                                                                              var_list=dis_vars, global_step=global_step)
         gen_train = tf.train.AdamOptimizer(learning_rate=g_learning_rate, beta1=0.5).minimize(gen_loss,
-                                                                                              var_list=gen_vars)
+                                                                                              var_list=gen_vars, global_step=global_step)
 
     # iterate training and update variables
     # train_g_loss_his = []
     # train_d_loss_his = []
     with tf.Session(graph=g) as session:
-        saver = tf.train.Saver()
+        saver = tf.train.Saver(max_to_keep=3)
         session.run(tf.global_variables_initializer())
         session.run(tf.local_variables_initializer())
         coordinator = tf.train.Coordinator()
+        for t_var in tf.trainable_variables():
+            tf.add_to_collection(t_var.name, t_var)
 
         threads = tf.train.start_queue_runners(session, coordinator)
         print('Start training')
@@ -157,9 +159,9 @@ def run_gan(files, total_epochs, batch_size, model_type):
                     ax[i].imshow(tf.reshape(generated[i], (64, 64, 3)).eval())
                 plt.savefig('check_points/{}.png'.format(str(epoch + 1).zfill(3)), bbox_inches='tight')
                 plt.close(fig)
-            saver.save(session, global_step=epoch)
+                saver.save(session, model_path, global_step=epoch)
 
-        saver.save(session, model_path)
+        saver.save(session, model_path+'/final')
         print('model saved in file : %s' % model_path)
 
         coordinator.request_stop()
@@ -183,32 +185,28 @@ def run_gan(files, total_epochs, batch_size, model_type):
 
 def test_gan(model_type):
 
-    model_path = 'check_points/model_save'
+    model_path = 'check_points/model_save/'
     n_noise = 128
-    z = tf.placeholder(tf.float32, [None, n_noise])
 
     loaded_graph = tf.Graph()
+    with loaded_graph.as_default():
+        saver = tf.train.import_meta_graph(model_path + 'final.meta')
+        Z = tf.placeholder(tf.float32, [None, n_noise])
+        if model_type == 'dc':
+            fake_x = generator.dc_generate(Z)
+        else:
+            fake_x = generator.vanilla_generate(Z)
+
     with tf.Session(graph=loaded_graph) as session:
         session.run(tf.global_variables_initializer())
-        saver = tf.train.import_meta_graph(model_path+'.meta')
-        saver.restore(session, tf.train.latest_checkpoint('check_points/'))
+
+        saver.restore(session, tf.train.latest_checkpoint(model_path))
 
         z_test_value = random_noise(10, n_noise)
-        x_gen_val = session.run(loaded_graph.get_operations(), feed_dict={z: z_test_value})
+        x_gen_val = session.run(fake_x, feed_dict={Z: z_test_value})
         fig, ax = plt.subplots(1, 10, figsize=(10, 1))
         for i in range(10):
             ax[i].set_axis_off()
             ax[i].imshow(tf.reshape(x_gen_val[i], (64, 64, 3)).eval())
         plt.savefig('check_points/test_{}.png'.format(str(i + 1).zfill(3)), bbox_inches='tight')
         plt.close(fig)
-
-
-
-# #Running a new session
-# print('Starting 2nd session')
-# with tf.Session(graph=g) as session:
-#     session.run(global_initializer)
-#     session.run(local_initializer)
-#
-#     saver.restore(session, model_path)
-#     print('Model restored')...
