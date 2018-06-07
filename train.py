@@ -24,8 +24,7 @@ if __name__ == '__main__':
     # parser.add_argument('--DATASET', required=False, type=str, default='bedroom')
     parser.add_argument('--TYPE', required=False, type=str, default='vanilla')
 
-    args = parser.parse_args([])
-
+    args = parser.parse_args()
     DATA_DIR = args.DATA_DIR
     # DATASET = args.DATASET
 
