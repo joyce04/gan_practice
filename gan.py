@@ -55,12 +55,14 @@ def run_gan(files, total_epochs, batch_size, model_type):
 
         # 2. generator & discriminator
         if model_type == 'vanilla':
+            print('Training Vanilla GAN....')
 
             fake_x = generator.vanilla_generate(Z)
 
             real_result, real_logists = discriminator.vanilla_discriminate(X)
             fake_result, fake_logists = discriminator.vanilla_discriminate(fake_x, True)
         else:
+            print('Training DCGAN....')
             fake_x = generator.dc_generate(Z)
 
             real_result, real_logists = discriminator.dc_discriminate(X)
@@ -180,17 +182,20 @@ def run_gan(files, total_epochs, batch_size, model_type):
     # plt.savefig('training_loss.png', bbox_inches='tight')
     # plt.show()
 
-def test_gan():
-    model_path = 'check_points/model'
-    n_noise = 128
-    z_prior = tf.placeholder(tf.float32, [10, n_noise], name="z_prior")
-    x_generated, _ = generator(z_prior)
-    chkpt_fname = tf.train.latest_checkpoint(model_path)
-
+def test_gan(model_type):
     init = tf.global_variables_initializer()
     sess = tf.Session()
     saver = tf.train.Saver()
     sess.run(init)
+
+    model_path = 'check_points/model'
+    n_noise = 128
+    z_prior = random_noise(10, 128)
+    if model_type == 'vanilla':
+        x_generated, _ = generator.vanilla_generate(z_prior)
+    else:
+        x_generated, _ = generator.dc_generate(z_prior)
+    chkpt_fname = tf.train.latest_checkpoint(model_path)
 
     saver.restore(sess, chkpt_fname)
     z_test_value = random_noise(10, n_noise)
@@ -199,7 +204,7 @@ def test_gan():
     for i in range(10):
         ax[i].set_axis_off()
         ax[i].imshow(tf.reshape(x_gen_val[i], (64, 64, 3)).eval())
-    plt.savefig('check_points/{}.png'.format(str(i + 1).zfill(3)), bbox_inches='tight')
+    plt.savefig('check_points/test_{}.png'.format(str(i + 1).zfill(3)), bbox_inches='tight')
     plt.close(fig)
 
 

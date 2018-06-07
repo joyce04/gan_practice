@@ -4,22 +4,28 @@ Required libs: matplotlib, lmdb via pip install matplotlib, pip install lmdb
 
 There are 4 total files in regard to training vanilla GAN and DCGAN.
 1. Data preprocess & load (data.py): includes converting mdb file to .wedp.
-Also has an option to train images as RGB or greyscale(standarized)
 2. Model implementation (gan.py <- generator.py / discriminator.py)
 3. Training (train.py)
 4. Inference (test.py)
 
 In order to run training via command refer to instructions below
 parameters
-1. --DATA_DIR, required=True, type=str: provide path of your dataset, specific to location of mdb file
+1. --DATA_DIR, required=True, type=str: provide path of your dataset, specific to location of .mdb file
 2. --BATCH_SIZE, required=False, type=int, default=100
 3. --TYPE, required=False, type=str, default='vanilla': provide which model you would like to train, options={'vanilla', 'dc'}
-example) python3 train.py --DATA_DIR /Users/workspace/lsun/church --BATCH_SIZE 100 --TYPE vanilla
 
-* If you can't find the converted .wedp files in data folder, please delete the data folder and rerun the train.py
+example)
+python3 train.py --DATA_DIR /Users/workspace/lsun/church_outdoor_lmdb --BATCH_SIZE 100 --TYPE vanilla
+or
+python3 train.py --DATA_DIR /Users/workspace/lsun/church_outdoor_lmdb --BATCH_SIZE 100 --TYPE dc
+python3 train.py --DATA_DIR /Users/workspace/lsun/church_outdoor_lmdb --BATCH_SIZE 100 --TYPE dc
+
+* If you can't find the converted .wedp files in data folder after running, please delete the data folder and rerun the train.py
 
 
 To test trained model, run Python3 test.py --TYPE 'vanilla'
 Make sure you test the trained model type.
 1. --TYPE, required=False, type=str, default='vanilla': provide which model you would like to train, options={'vanilla', 'dc'}
 *Due to test.py you are required to install matplotlib
+*Make sure to test for the same model type you trained. If you trained vanilla GAN -> you should test vanilla GAN model.
+You will be able to check generate images

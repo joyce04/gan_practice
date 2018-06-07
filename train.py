@@ -23,7 +23,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     DATA_DIR = args.DATA_DIR
-    # DATASET = args.DATASET
+    BATCH_SIZE = args.BATCH_SIZE
+    model_type = args.BATCH_SIZE
 
     check_point_dir = 'check_points/'# + DATASET + '/'
 
@@ -37,14 +38,14 @@ if __name__ == '__main__':
     except Exception:
         pass
 
-    total_epochs = 2000  # args.BATCH_SIZE
-    BATCH_SIZE = 100  # args.BATCH_SIZE
-
-    model_type = 'vanilla'  # 'dc' #args.BATCH_SIZE
+    total_epochs = 5000
 
     path = DATA_DIR #os.getcwd() + '/lsun/church_outdoor_train_lmdb'
+    print('Running with data in %s' % DATA_DIR)
+    print('Running with data in %s' % DATA_DIR)
 
     files = data.convert_data(path)
-    files = files[:4000]
+    if len(files) > 4000:
+        files = files[:4000]
 
     gan.run_gan(files, total_epochs, BATCH_SIZE, model_type)
