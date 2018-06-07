@@ -54,19 +54,19 @@ def run_gan(files, total_epochs, batch_size, model_type):
         Z = tf.placeholder(tf.float32, [None, n_noise])
 
         # 2. generator & discriminator
-        if model_type == 'vanilla':
-            print('Training Vanilla GAN....')
-
-            fake_x = generator.vanilla_generate(Z)
-
-            real_result, real_logists = discriminator.vanilla_discriminate(X)
-            fake_result, fake_logists = discriminator.vanilla_discriminate(fake_x, True)
-        else:
+        if model_type == 'dc':
             print('Training DCGAN....')
             fake_x = generator.dc_generate(Z)
 
             real_result, real_logists = discriminator.dc_discriminate(X)
             fake_result, fake_logists = discriminator.dc_discriminate(fake_x, True)
+        else:
+            print('Training Vanilla GAN....')
+
+            fake_x = generator.vanilla_generate(Z)
+
+            real_result, real_logists = discriminator.vanilla_discriminate(X)
+            fake_result, fake_logists = discriminator.vanilla_discriminate(fake_x, True)         
 
         # 3. loss functions
         # loss function in GAN represents performance of generator and discriminator
@@ -191,10 +191,11 @@ def test_gan(model_type):
     model_path = 'check_points/model'
     n_noise = 128
     z_prior = random_noise(10, 128)
-    if model_type == 'vanilla':
-        x_generated, _ = generator.vanilla_generate(z_prior)
-    else:
+    if model_type == 'dc':
         x_generated, _ = generator.dc_generate(z_prior)
+    else:
+        x_generated, _ = generator.vanilla_generate(z_prior)
+
     chkpt_fname = tf.train.latest_checkpoint(model_path)
 
     saver.restore(sess, chkpt_fname)
