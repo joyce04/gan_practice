@@ -2,7 +2,6 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import data
 import discriminator, generator
-
 import pandas as pd
 # import numpy as np
 
@@ -99,9 +98,8 @@ def run_gan(files, total_epochs, batch_size, model_type):
                                                                                               var_list=gen_vars)
 
     # iterate training and update variables
-    train_g_loss_his = []
-    train_d_loss_his = []
-    # try:
+    # train_g_loss_his = []
+    # train_d_loss_his = []
     with tf.Session(graph=g) as session:
         saver = tf.train.Saver()
         session.run(tf.global_variables_initializer())
@@ -137,20 +135,18 @@ def run_gan(files, total_epochs, batch_size, model_type):
                 print("=======Epoch : ", epoch + 1, " =======================================")
                 print("generator loss : ", train_dis_loss)
                 print("discriminator loss : ", train_gen_loss)
-                train_d_loss_his.append({'x': epoch + 1, 'y': train_gen_loss})
-                train_g_loss_his.append({'x': epoch + 1, 'y': train_dis_loss})
+                # train_d_loss_his.append({'x': epoch + 1, 'y': train_gen_loss})
+                # train_g_loss_his.append({'x': epoch + 1, 'y': train_dis_loss})
 
                 # check 10 fake images and input images
             if epoch == 0 or (epoch + 1) % 50 == 0:
-                fig, ax = plt.subplots(1, 10, figsize=(10, 1))
-                for i in range(10):
-                    ax[i].set_axis_off()
-                    real_images_ = tf.expand_dims(train_x.eval()[i], 0)
-                    # real_images_ = tf.expand_dims(train_x[i], 0)
-                    ax[i].imshow(tf.reshape(real_images_, (64, 64, 3)).eval())
-                    # ax[i].imshow(tf.reshape(real_images_, (28, 28)).eval())
-                plt.savefig('check_points/input_{}.png'.format(str(epoch + 1).zfill(3)), bbox_inches='tight')
-                plt.close(fig)
+                # fig, ax = plt.subplots(1, 10, figsize=(10, 1))
+                # for i in range(10):
+                #     ax[i].set_axis_off()
+                #     real_images_ = tf.expand_dims(train_x.eval()[i], 0)
+                #     ax[i].imshow(tf.reshape(real_images_, (64, 64, 3)).eval())
+                # plt.savefig('check_points/input_{}.png'.format(str(epoch + 1).zfill(3)), bbox_inches='tight')
+                # plt.close(fig)
 
                 sample_noise = random_noise(10, n_noise)
 
@@ -159,33 +155,54 @@ def run_gan(files, total_epochs, batch_size, model_type):
                 for i in range(10):
                     ax[i].set_axis_off()
                     ax[i].imshow(tf.reshape(generated[i], (64, 64, 3)).eval())
-                    # ax[i].imshow(tf.reshape(generated[i], (28, 28)).eval())
                 plt.savefig('check_points/{}.png'.format(str(epoch + 1).zfill(3)), bbox_inches='tight')
                 plt.close(fig)
 
-        save_path = saver.save(session, model_path)
-        print('model saved in file : %s' % save_path)
+        saver.save(session, model_path)
+        print('model saved in file : %s' % model_path)
+
         coordinator.request_stop()
         coordinator.join(threads)
         print('optimization finished')
 
-    # except Exception as e:
-    #     print(e)
+    # gen_his = pd.DataFrame(train_g_loss_his)
+    # gen_his.columns = ['x', 'y']
+    # disc_his = pd.DataFrame(train_d_loss_his)
+    # disc_his.columns = ['x', 'y']
+    #
+    # sub = plt.subplot(2, 1, 1)
+    # plt.title('Training loss')
+    # plt.xlabel('iteration(Epoch)')
+    # plt.plot(gen_his.x.tolist(), gen_his.y.tolist(), '-', label='generator')
+    # plt.plot(disc_his.x.tolist(), disc_his.y.tolist(), '-', label='discriminator')
+    # plt.legend()
+    # plt.gcf().set_size_inches(15, 12)
+    # plt.savefig('training_loss.png', bbox_inches='tight')
+    # plt.show()
 
-    gen_his = pd.DataFrame(train_g_loss_his)
-    gen_his.columns = ['x', 'y']
-    disc_his = pd.DataFrame(train_d_loss_his)
-    disc_his.columns = ['x', 'y']
+def test_gan():
+    model_path = 'check_points/model'
+    n_noise = 128
+    z_prior = tf.placeholder(tf.float32, [10, n_noise], name="z_prior")
+    x_generated, _ = generator(z_prior)
+    chkpt_fname = tf.train.latest_checkpoint(model_path)
 
-    sub = plt.subplot(2, 1, 1)
-    plt.title('Training loss')
-    plt.xlabel('iteration(Epoch)')
-    plt.plot(gen_his.x.tolist(), gen_his.y.tolist(), '-', label='generator')
-    plt.plot(disc_his.x.tolist(), disc_his.y.tolist(), '-', label='discriminator')
-    plt.legend()
-    plt.gcf().set_size_inches(15, 12)
-    plt.savefig('training_loss.png', bbox_inches='tight')
-    plt.show()
+    init = tf.global_variables_initializer()
+    sess = tf.Session()
+    saver = tf.train.Saver()
+    sess.run(init)
+
+    saver.restore(sess, chkpt_fname)
+    z_test_value = random_noise(10, n_noise)
+    x_gen_val = sess.run(x_generated, feed_dict={z_prior: z_test_value})
+    fig, ax = plt.subplots(1, 10, figsize=(10, 1))
+    for i in range(10):
+        ax[i].set_axis_off()
+        ax[i].imshow(tf.reshape(x_gen_val[i], (64, 64, 3)).eval())
+    plt.savefig('check_points/{}.png'.format(str(i + 1).zfill(3)), bbox_inches='tight')
+    plt.close(fig)
+
+
 
 # #Running a new session
 # print('Starting 2nd session')

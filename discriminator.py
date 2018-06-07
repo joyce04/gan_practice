@@ -23,10 +23,7 @@ def xavier_init(n_input, n_output, uniform=True):
 # set reuse attribute to evaluate real and fake images with same variables
 def vanilla_discriminate(x, _reuse=False):
     n_hidden = 256
-    # n_hidden = 1600
-    # n_input = 28 * 28 * 3
-    n_input = 128 * 128 * 3
-    # n_input = 128 * 128 * 1
+    n_input = 64 * 64 * 3
 
     _mean = 0.0
     _stddev = 0.01
