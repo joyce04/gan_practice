@@ -45,7 +45,7 @@ if __name__ == '__main__':
     print('Running with data in %s' % DATA_DIR)
 
     files = data.convert_data(path)
-    if len(files) > 4000:
-        files = files[:4000]
+    if len(files) > 2000:
+        files = files[:2000]
 
     gan.run_gan(files, total_epochs, BATCH_SIZE, model_type)
