@@ -31,7 +31,7 @@ def input_pipeline(filenames, total_epochs, mini_batch_size):
 def run_gan(files, total_epochs, batch_size, model_type):
     n_input = 64 * 64 * 3
     n_noise = 128
-    model_path = 'check_points/model'
+    model_path = 'check_points/model_save'
     mini_batch_size = 50
     d_learning_rate = 2e-4
     g_learning_rate = 2e-3  # 1e-3
@@ -181,30 +181,25 @@ def run_gan(files, total_epochs, batch_size, model_type):
     # plt.show()
 
 def test_gan(model_type):
-    init = tf.global_variables_initializer()
-    sess = tf.Session()
-    saver = tf.train.Saver()
-    sess.run(init)
 
-    model_path = 'check_points/model'
+    model_path = 'check_points/model_save'
     n_noise = 128
-    z_prior = random_noise(10, 128)
-    if model_type == 'dc':
-        x_generated, _ = generator.dc_generate(z_prior)
-    else:
-        x_generated, _ = generator.vanilla_generate(z_prior)
+    z = tf.placeholder(tf.float32, [None, n_noise])
 
-    chkpt_fname = tf.train.latest_checkpoint(model_path)
+    loaded_graph = tf.Graph()
+    with tf.Session(graph=loaded_graph) as session:
+        session.run(tf.global_variables_initializer())
+        saver = tf.train.import_meta_graph(model_path+'.meta')
+        saver.restore(session, tf.train.latest_checkpoint('check_points/'))
 
-    saver.restore(sess, chkpt_fname)
-    z_test_value = random_noise(10, n_noise)
-    x_gen_val = sess.run(x_generated, feed_dict={z_prior: z_test_value})
-    fig, ax = plt.subplots(1, 10, figsize=(10, 1))
-    for i in range(10):
-        ax[i].set_axis_off()
-        ax[i].imshow(tf.reshape(x_gen_val[i], (64, 64, 3)).eval())
-    plt.savefig('check_points/test_{}.png'.format(str(i + 1).zfill(3)), bbox_inches='tight')
-    plt.close(fig)
+        z_test_value = random_noise(10, n_noise)
+        x_gen_val = session.run(loaded_graph.get_operations(), feed_dict={z: z_test_value})
+        fig, ax = plt.subplots(1, 10, figsize=(10, 1))
+        for i in range(10):
+            ax[i].set_axis_off()
+            ax[i].imshow(tf.reshape(x_gen_val[i], (64, 64, 3)).eval())
+        plt.savefig('check_points/test_{}.png'.format(str(i + 1).zfill(3)), bbox_inches='tight')
+        plt.close(fig)
 
 
 
