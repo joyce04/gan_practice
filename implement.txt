@@ -11,6 +11,7 @@ There are 4 total files in regard to training vanilla GAN and DCGAN.
 In order to run training via command refer to instructions below
 parameters
 1. --DATA_DIR, required=True, type=str: provide path of your dataset, specific to location of .mdb file
+From the given dataset, the model will utilize 3000 samples
 2. --BATCH_SIZE, required=False, type=int, default=100
 3. --TYPE, required=False, type=str, default='vanilla': provide which model you would like to train, options={'vanilla', 'dc'}
 
@@ -21,7 +22,6 @@ python3 train.py --DATA_DIR /Users/workspace/lsun/church_outdoor_lmdb --BATCH_SI
 python3 train.py --DATA_DIR /Users/workspace/lsun/church_outdoor_lmdb --BATCH_SIZE 100 --TYPE dc
 
 * If you can't find the converted .wedp files in data folder after running, please delete the data folder and rerun the train.py
-
 
 To test trained model, run Python3 test.py --TYPE 'vanilla'
 Make sure you test the trained model type.

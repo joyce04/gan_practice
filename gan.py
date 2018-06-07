@@ -2,7 +2,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import data
 import discriminator, generator
-import pandas as pd
+# import pandas as pd
 # import numpy as np
 
 # random_noise is created by random normal distribution for each fake image
@@ -13,16 +13,14 @@ def random_noise(batch_size, noise):
 
 
 def input_pipeline(filenames, total_epochs, mini_batch_size):
-    filename_queue = tf.train.string_input_producer(filenames
-                                                    , num_epochs=total_epochs
-                                                    , shuffle=True)
+    filename_queue = tf.train.string_input_producer(filenames)
     real_images = data.read_input_queue(filename_queue)
     label = True
     print(real_images.shape)
     # min_after_dequeue defines how big a buffer we will randomly sample from
     min_after_dequeue = 100
     # capacity recommended by tensorflow
-    capacity = min_after_dequeue + mini_batch_size * 2
+    capacity = min_after_dequeue + mini_batch_size *3
     image_batch, label_batch = tf.train.shuffle_batch([real_images, label]
                                                       , batch_size=min_after_dequeue
                                                       , capacity=capacity
@@ -66,7 +64,7 @@ def run_gan(files, total_epochs, batch_size, model_type):
             fake_x = generator.vanilla_generate(Z)
 
             real_result, real_logists = discriminator.vanilla_discriminate(X)
-            fake_result, fake_logists = discriminator.vanilla_discriminate(fake_x, True)         
+            fake_result, fake_logists = discriminator.vanilla_discriminate(fake_x, True)
 
         # 3. loss functions
         # loss function in GAN represents performance of generator and discriminator
