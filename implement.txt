@@ -1,5 +1,7 @@
 instructions
 
+Required libs: matplotlib, lmdb via pip install matplotlib, pip install lmdb
+
 There are 4 total files in regard to training vanilla GAN and DCGAN.
 1. Data preprocess & load (data.py): includes converting mdb file to .wedp.
 Also has an option to train images as RGB or greyscale(standarized)

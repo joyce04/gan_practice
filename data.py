@@ -21,8 +21,6 @@ def convert_data(path):
     out_dir = path + '/data'
 
     print('Exporting', path, 'to', out_dir)
-    reader = io_ops.LMDBReader()
-    reader.read()
     lmdb_env = lmdb.open(path,
                          max_readers=100,
                          readonly=True)
