@@ -157,6 +157,7 @@ def run_gan(files, total_epochs, batch_size, model_type):
                     ax[i].imshow(tf.reshape(generated[i], (64, 64, 3)).eval())
                 plt.savefig('check_points/{}.png'.format(str(epoch + 1).zfill(3)), bbox_inches='tight')
                 plt.close(fig)
+            saver.save(session, global_step=epoch)
 
         saver.save(session, model_path)
         print('model saved in file : %s' % model_path)
