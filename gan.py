@@ -2,6 +2,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import data
 import discriminator, generator
+slim = tf.contrib.slim
 # import pandas as pd
 # import numpy as np
 
@@ -20,7 +21,7 @@ def input_pipeline(filenames, total_epochs, mini_batch_size):
     # min_after_dequeue defines how big a buffer we will randomly sample from
     min_after_dequeue = 100
     # capacity recommended by tensorflow
-    capacity = min_after_dequeue + mini_batch_size *3
+    capacity = min_after_dequeue + mini_batch_size * 3
     image_batch, label_batch = tf.train.shuffle_batch([real_images, label]
                                                       , batch_size=min_after_dequeue
                                                       , capacity=capacity
@@ -95,7 +96,8 @@ def run_gan(files, total_epochs, batch_size, model_type):
         dis_train = tf.train.AdamOptimizer(learning_rate=d_learning_rate, beta1=0.5).minimize(dis_loss,
                                                                                               var_list=dis_vars)
         gen_train = tf.train.AdamOptimizer(learning_rate=g_learning_rate, beta1=0.5).minimize(gen_loss,
-                                                                                              var_list=gen_vars)
+                                                                                              var_list=gen_vars,
+                                                                                              name='gen_train')
 
     # iterate training and update variables
     # train_g_loss_his = []
@@ -105,13 +107,11 @@ def run_gan(files, total_epochs, batch_size, model_type):
         session.run(tf.global_variables_initializer())
         session.run(tf.local_variables_initializer())
         coordinator = tf.train.Coordinator()
-        for t_var in tf.trainable_variables():
-            tf.add_to_collection(t_var.name, t_var)
 
         threads = tf.train.start_queue_runners(session, coordinator)
         print('Start training')
         # total_batch = int(mnist.train.num_examples/BATCH_SIZE)
-        total_batch = int(batch_size/mini_batch_size)
+        total_batch = int(batch_size / mini_batch_size)
 
         for epoch in range(total_epochs):
             for step in range(total_batch):
@@ -161,7 +161,7 @@ def run_gan(files, total_epochs, batch_size, model_type):
                 plt.close(fig)
                 saver.save(session, model_path, global_step=epoch)
 
-        saver.save(session, model_path+'/final')
+        saver.save(session, model_path + '/final')
         print('model saved in file : %s' % model_path)
 
         coordinator.request_stop()
@@ -183,30 +183,80 @@ def run_gan(files, total_epochs, batch_size, model_type):
     # plt.savefig('training_loss.png', bbox_inches='tight')
     # plt.show()
 
-def test_gan(model_type):
 
+def test_gan(model_type):
     model_path = 'check_points/model_save/'
     n_noise = 128
 
-    loaded_graph = tf.Graph()
-    with loaded_graph.as_default():
-        saver = tf.train.import_meta_graph(model_path + 'final.meta')
-        Z = tf.placeholder(tf.float32, [None, n_noise])
-        if model_type == 'dc':
-            fake_x = generator.dc_generate(Z)
-        else:
-            fake_x = generator.vanilla_generate(Z)
+    z = tf.placeholder(tf.float32, [None, n_noise])
 
-    with tf.Session(graph=loaded_graph) as session:
+    if model_type == 'dc':
+        bn_params = {
+            "decay": 0.99,
+            "epsilon": 1e-5,
+            "scale": True,
+            "is_training": True
+        }
+        initial_shape_multi = 4 * 4 * 1024
+        initial_shape = [-1, 4, 4, 1024]
+
+        # to reshape the given noise
+        net = z
+        net = slim.fully_connected(net, initial_shape_multi, activation_fn=tf.nn.relu)
+        net = tf.reshape(net, initial_shape)
+        with slim.arg_scope([slim.conv2d_transpose], kernel_size=[5, 5], stride=2, padding='SAME',
+                            activation_fn=tf.nn.relu, normalizer_fn=slim.batch_norm,
+                            normalizer_params=bn_params):
+            net = slim.conv2d_transpose(net, 512)
+            net = slim.conv2d_transpose(net, 256)
+            net = slim.conv2d_transpose(net, 128)
+            net = slim.conv2d_transpose(net, 3, activation_fn=tf.nn.tanh, normalizer_fn=None)
+            return net
+    else:
+        n_hidden = 64
+        n_noise = 128
+        _mean = 0.0
+        _stddev = 0.01
+        n_output = 64 * 64 * 3
+
+        gw1 = tf.get_variable(name='w1',
+                              shape=[n_noise, n_hidden],
+                              initializer=generator.xavier_init(n_noise, n_hidden))
+        # initializer = tf.random_normal_initializer(mean=_mean, stddev=_stddev))
+
+        gb1 = tf.get_variable(name='b1',
+                              shape=[n_hidden],
+                              initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
+        gw2 = tf.get_variable(name='w2',
+                              shape=[n_hidden, n_hidden * 2],
+                              initializer=generator.xavier_init(n_hidden, n_hidden * 2))
+        # initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
+        gb2 = tf.get_variable(name='b2',
+                              shape=[n_hidden * 2],
+                              initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
+        gw3 = tf.get_variable(name="w3",
+                              shape=[n_hidden * 2, n_output],
+                              initializer=generator.xavier_init(n_hidden * 2, n_output))
+        # initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
+        gb3 = tf.get_variable(name="b3",
+                              shape=[n_output],
+                              initializer=tf.random_normal_initializer(mean=_mean, stddev=_stddev))
+
+        hidden1 = tf.nn.leaky_relu(tf.matmul(z, gw1) + gb1)
+        hidden2 = tf.nn.leaky_relu(tf.matmul(hidden1, gw2) + gb2)
+        output = tf.nn.sigmoid(tf.matmul(hidden2, gw3) + gb3)
+
+    saver = tf.train.import_meta_graph(model_path + 'final.meta')
+    with tf.Session() as session:
+        saver.restore(session, tf.train.latest_checkpoint(model_path))
         session.run(tf.global_variables_initializer())
 
-        saver.restore(session, tf.train.latest_checkpoint(model_path))
+        Z = random_noise(10, n_noise)
 
-        z_test_value = random_noise(10, n_noise)
-        x_gen_val = session.run(fake_x, feed_dict={Z: z_test_value})
+        output_img = session.run(output, feed_dict={'Placeholder:0': Z})
         fig, ax = plt.subplots(1, 10, figsize=(10, 1))
         for i in range(10):
             ax[i].set_axis_off()
-            ax[i].imshow(tf.reshape(x_gen_val[i], (64, 64, 3)).eval())
+            ax[i].imshow(tf.reshape(output_img[i], (64, 64, 3)).eval())
         plt.savefig('check_points/test_{}.png'.format(str(i + 1).zfill(3)), bbox_inches='tight')
         plt.close(fig)
